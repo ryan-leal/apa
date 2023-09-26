@@ -1,69 +1,36 @@
-########################################################################
-####################### Makefile Template ##############################
-########################################################################
+# Compiler and flags
+CC := g++
+CFLAGS := -std=c++20 -Wall
 
-# Compiler settings - Can be customized.
-CC = g++
-CXXFLAGS = -std=c++20 -Wall
-LDFLAGS = 
+# Directories
+SRC_DIR := src
+BIN_DIR := bin
+INC_DIR := $(SRC_DIR)/includes
 
-# Makefile settings - Can be customized.
-APPNAME = apa
-EXT = .cc
-SRCDIR = src
-OBJDIR = obj
+# Source files and object files
+SRCS := $(shell dir /s /b $(SRC_DIR)\*.cc)
+OBJS := $(patsubst $(SRC_DIR)/%.cc, $(BIN_DIR)/%.o, $(SRCS))
 
-############## Do not change anything from here downwards! #############
-SRC = $(wildcard $(SRCDIR)/*$(EXT))
-OBJ = $(SRC:$(SRCDIR)/%$(EXT)=$(OBJDIR)/%.o)
-DEP = $(OBJ:$(OBJDIR)/%.o=%.d)
-# UNIX-based OS variables & settings
-RM = rm
-DELOBJ = $(OBJ)
-# Windows OS variables & settings
-DEL = del
-EXE = .exe
-WDELOBJ = $(SRC:$(SRCDIR)/%$(EXT)=$(OBJDIR)\\%.o)
+# Output binary
+TARGET := $(BIN_DIR)/apa.exe
 
-########################################################################
-####################### Targets beginning here #########################
-########################################################################
+# Targets
+all: $(TARGET)
 
-all: $(APPNAME)
+# Linking
+$(TARGET): $(OBJS)
+	@echo Linking $@..
+	$(CC) $(CFLAGS) -o $@ $^
 
-# Builds the app
-$(APPNAME): $(OBJ)
-	$(CC) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+# Compiling
+$(BIN_DIR)/%.o: $(SRC_DIR)/%.cc
+	@echo Compiling $@..
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -I$(INC_DIR) -c -o $@ $<
 
-# Creates the dependecy rules
-%.d: $(SRCDIR)/%$(EXT)
-	@$(CPP) $(CFLAGS) $< -MM -MT $(@:%.d=$(OBJDIR)/%.o) >$@
-
-# Includes all .h files
--include $(DEP)
-
-# Building rule for .o files and its .c/.cpp in combination with all .h
-$(OBJDIR)/%.o: $(SRCDIR)/%$(EXT)
-	$(CC) $(CXXFLAGS) -o $@ -c $<
-
-################### Cleaning rules for Unix-based OS ###################
-# Cleans complete project
-.PHONY: clean
+# Cleaning
 clean:
-	$(RM) $(DELOBJ) $(DEP) $(APPNAME)
+	@echo Cleaning up..
+	@del /q /s $(BIN_DIR)
 
-# Cleans only all files with the extension .d
-.PHONY: cleandep
-cleandep:
-	$(RM) $(DEP)
-
-#################### Cleaning rules for Windows OS #####################
-# Cleans complete project
-.PHONY: cleanw
-cleanw:
-	$(DEL) $(WDELOBJ) $(DEP) $(APPNAME)$(EXE)
-
-# Cleans only all files with the extension .d
-.PHONY: cleandepw
-cleandepw:
-	$(DEL) $(DEP)
+.PHONY: all clean
