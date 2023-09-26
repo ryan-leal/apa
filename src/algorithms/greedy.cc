@@ -1,112 +1,62 @@
 #include "../includes/algorithms/greedy.hh"
 
-#include <algorithm>
 #include <iostream>
 #include <limits>
 
 namespace apa {
 
 apa::stats greedy::run() {
-  int routing_costs{};
-  int outsourcing_costs{};
+  while (greedy::has_pending_clients()) {
+    const int vehicle{greedy::find_vehicle_with_most_capacity()};
+    const int origin_client{greedy::find_last_client_in_route(vehicle)};
+    const int target_client{greedy::find_highest_priority_client(origin_client, vehicle)};
 
-  std::unordered_set<int> pending_clients{};
-  std::vector<std::vector<int>> vehicle_routes(context().vehicles, std::vector<int>());
-  std::vector<int> outsourced_clients{};
-  std::vector<int> vehicle_capacity(context().vehicles, context().vehicle_capacity);
+    if (target_client) {
+      const int target_demand{context().demand(target_client)};
+      const int target_distance{context().distance(origin_client, target_client)};
 
-  for (int client = 6; client >= 1; client--) {
-    pending_clients.insert(client);
-  }
-
-  for (int vehicle = 0; vehicle < context().vehicles; vehicle++) {
-    int origin{0};  // warehouse
-
-    while (!pending_clients.empty() && vehicle_capacity[vehicle] > 0) {
-      int client{find_next_client(origin, vehicle, pending_clients, vehicle_capacity)};
-      if (client == -1) {
-        // Can't find a client to serve with the remaining capacity of the current vehicle.
-        // So, we go back to the warehouse.
-        routing_costs += context().distance(origin, 0);
-
-        //        std::cout << "V" << vehicle << ": "
-        //                  << "[" << origin << "] -> [" << 0 << "] | "
-        //                  << "demand: " << 0 << " | cost: " << context().distance(origin, 0) <<
-        //                  std::endl;
-        break;
-      }
-
-      int demand{context().demand(client)};
-      int cost{context().distance(origin, client)};
-
-      vehicle_capacity[vehicle] -= demand;
-      vehicle_routes[vehicle].push_back(client);
-
-      pending_clients.erase(client);
-
-      //      std::cout << "V" << vehicle << ": "
-      //                << "[" << origin << "] -> [" << client << "] | "
-      //                << "demand: " << demand << " | cost: " << cost << std::endl;
-
-      routing_costs += cost;
-      origin = client;
-
-      if (vehicle_capacity[vehicle] == 0) {
-        // The current vehicle is full, so we go back to the warehouse.
-        routing_costs += context().distance(origin, 0);
-
-        //        std::cout << "V" << vehicle << ": "
-        //                  << "[" << origin << "] -> [" << 0 << "] | "
-        //                  << "demand: " << 0 << " | cost: " << context().distance(origin, 0) <<
-        //                  std::endl;
-      }
+      greedy::load_vehicle(vehicle, target_demand);
+      greedy::add_to_route(vehicle, target_client, target_distance);
+      greedy::serve_client(target_client);
+    } else {
+      greedy::outsource_client(greedy::find_pending_client_with_highest_outsource_cost());
     }
   }
 
-  // outsource remaining clients
-  for (const auto &client : pending_clients) {
-    outsourcing_costs += context().outsourcing_cost(client);
-    outsourced_clients.push_back(client);
+  // All clients have been served, return to depot.
+  for (int vehicle = 0; vehicle < context().vehicles; vehicle++) {
+    greedy::return_to_depot(vehicle);
   }
 
-  int vehicle_costs = static_cast<int>(
-      std::count_if(vehicle_capacity.begin(),
-                    vehicle_capacity.end(),
-                    [&](int capacity) { return capacity < context().vehicle_capacity; }) *
-      context().vehicle_cost);
-
   return {
-      routing_costs + vehicle_costs + outsourcing_costs,  // total_cost
-      routing_costs,                                      // routing_cost
-      vehicle_costs,                                      // vehicles_cost
-      outsourcing_costs,                                  // outsourcing_cost
-      outsourced_clients,                                 // outsourced_clients
-      vehicle_routes                                      // vehicle_routes
+      greedy::total_cost(),              // total_cost
+      greedy::total_routing_cost(),      // routing_cost
+      greedy::total_vehicle_cost(),      // vehicles_cost
+      greedy::total_outsourcing_cost(),  // outsourcing_cost
+      greedy::outsourced_clients(),      // outsourced_clients
+      greedy::vehicle_routes()           // vehicle_routes
   };
 }
 
-int greedy::find_next_client(int origin,
-                             int vehicle,
-                             const std::unordered_set<int> &clients,
-                             const std::vector<int> &vehicle_capacity) {
-  int next_client{-1};
-  int next_client_cost{std::numeric_limits<int>::max()};
+int greedy::find_highest_priority_client(int origin, int vehicle) {
+  int client{0};
+  int client_priority{std::numeric_limits<int>::min()};
 
-  // can we improve the greedy criteria?
+  for (const auto &target : pending_clients()) {
+    const int target_demand{context().demand(target)};
+    const int target_distance{context().distance(origin, target)};
 
-  for (const auto &client : clients) {
-    int demand{context().demand(client)};
-    int distance{context().distance(origin, client)};
+    // TODO: this is a very naive approach, we should consider more than this. Also, outsource cost
+    // is not being considered.
+    const int priority{target_demand / target_distance};
 
-    int cost{distance};
-
-    if (cost < next_client_cost && demand <= vehicle_capacity[vehicle]) {
-      next_client = client;
-      next_client_cost = distance;
+    if (priority > client_priority && target_demand <= greedy::vehicle_capacity(vehicle)) {
+      client = target;
+      client_priority = target_distance;
     }
   }
 
-  return next_client;
+  return client;
 }
 
 }  // namespace apa

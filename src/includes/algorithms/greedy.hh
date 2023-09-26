@@ -1,8 +1,5 @@
 #pragma once
 
-#include <unordered_set>
-#include <vector>
-
 #include "algorithm.hh"
 
 namespace apa {
@@ -14,10 +11,7 @@ class greedy : public algorithm {
   [[nodiscard]] apa::stats run() override;
 
  protected:
-  [[nodiscard]] int find_next_client(int origin,
-                                     int vehicle,
-                                     const std::unordered_set<int> &clients,
-                                     const std::vector<int> &vehicle_capacity);
+  [[nodiscard]] int find_highest_priority_client(int origin, int vehicle);
 };
 
 }  // namespace apa
