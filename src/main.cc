@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include "includes/algorithms/algorithm.hh"
+#include "includes/algorithms/greedy.hh"
 
 int main(int argc, char** argv) {
   if (argc != 2) {
@@ -12,6 +12,8 @@ int main(int argc, char** argv) {
 
   std::vector<std::unique_ptr<apa::algorithm>> algorithms{};
   apa::context context = apa::context_parser::parse(argv[1]);
+
+  algorithms.push_back(std::make_unique<apa::greedy>(context));
 
   for (const auto& algorithm : algorithms) {
     const auto& algorithm_stats{algorithm->run()};
