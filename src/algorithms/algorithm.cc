@@ -44,11 +44,11 @@ int algorithm::find_last_client_in_route(int vehicle) const {
   return _vehicle_routes[vehicle].empty() ? 0 : _vehicle_routes[vehicle].back();
 }
 
-int algorithm::find_pending_client_with_highest_outsource_cost() {
+int algorithm::find_pending_client_with_lowest_outsource_cost() {
   int client{*_pending_clients.begin()};
 
   for (const auto &current : _pending_clients) {
-    if (_context.outsourcing_cost(current) > _context.outsourcing_cost(client)) {
+    if (_context.outsourcing_cost(current) < _context.outsourcing_cost(client)) {
       client = current;
     }
   }

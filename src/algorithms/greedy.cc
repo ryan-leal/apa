@@ -19,7 +19,7 @@ apa::stats greedy::run() {
       greedy::add_to_route(vehicle, target_client, target_distance);
       greedy::serve_client(target_client);
     } else {
-      greedy::outsource_client(greedy::find_pending_client_with_highest_outsource_cost());
+      greedy::outsource_client(greedy::find_pending_client_with_lowest_outsource_cost());
     }
   }
 
