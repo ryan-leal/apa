@@ -56,7 +56,7 @@ class algorithm {
 
   [[nodiscard]] int find_last_client_in_route(int vehicle) const;
 
-  [[nodiscard]] int find_pending_client_with_highest_outsource_cost();
+  [[nodiscard]] int find_pending_client_with_lowest_outsource_cost();
 
   [[nodiscard]] int vehicle_capacity(int vehicle) const;
 
